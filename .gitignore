@@ -1,3 +1,9 @@
 venv
 .idea
 educatemebackend/__pycache__
+api/__pycache__
+userauth/__pycache__
+api/migrations/
+userauth/migrations
+educatemebackend/migrations
+db.sqlite3
