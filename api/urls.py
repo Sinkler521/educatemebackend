@@ -1,7 +1,6 @@
 from django.urls import path
-from . import views
-
+from .views import ContactUsView
 
 urlpatterns = [
-    path('contactus', views.contactus, name='contactus')
+    path('contactus/', ContactUsView.as_view(), name='contactus'),
 ]

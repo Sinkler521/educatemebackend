@@ -1,17 +1,16 @@
-import json
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .serializers import ContactUsSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 
 
-@csrf_exempt
-def contactus(request):
-    try:
-        data = json.loads(request.body)
-        email = data.get('email')
-        message = data.get('message')
-        if email and message:
+class ContactUsView(APIView):
+    def post(self, request):
+        serializer = ContactUsSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            message = serializer.validated_data.get('message')
             try:
                 send_mail(
                     subject="EducateMe thanks for your message",
@@ -29,10 +28,7 @@ def contactus(request):
                     fail_silently=False
                 )
             except Exception as e:
-                return JsonResponse({'status': 'success', 'message': f'Something went wrong\n{e}'})
-            return JsonResponse({'status': 'success', 'message': 'Message sent'})
+                return Response({'status': 'failed', 'error': f'Something wrong\n{e}'})
+            return Response({'status': 'success', 'message': 'Message sent'})
         else:
-            return JsonResponse({'status': 'failed', 'error': 'Missing data'})
-    except json.JSONDecodeError:
-        return JsonResponse({'status': 'failed', 'error': 'Invalid JSON data'})
-
+            return Response({'status': 'failed', 'error': serializer.errors}, status=400)
