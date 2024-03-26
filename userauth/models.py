@@ -37,9 +37,5 @@ class CustomUser(AbstractBaseUser):
 
     objects = CustomUserManager()
 
-    def save(self, *args, **kwargs):
-        self.date_joined = timezone.now().strftime("%Y.%m.%d")
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return self.email

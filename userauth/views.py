@@ -1,12 +1,14 @@
+from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.hashers import check_password
+from django.conf import settings
 
 from .models import CustomUser
 from .serializers import CustomUserSerializer
-from .helpers import get_tokens_for_user
+from .helpers import get_tokens_for_user, generate_random_password
 
 
 @api_view(['POST'])
@@ -46,3 +48,33 @@ def login_user(request):
                 return Response({'error': 'Неправильный пароль'}, status=status.HTTP_401_UNAUTHORIZED)
         else:
             return Response({'error': 'Пользователь с таким email не существует'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+def reset_password(request):
+    if request.method == 'POST':
+        email = request.data.get('email')
+
+        user = CustomUser.objects.filter(email=email).first()
+        if user is None:
+            return Response({'error': 'Пользователь с таким email не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_password = generate_random_password()
+        user.set_password(new_password)
+        user.save()
+
+        send_mail(
+            'Сброс пароля',
+            f'Ваш новый пароль: {new_password}',
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+        )
+
+        return Response({'message': 'Письмо с новым паролем отправлено'}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def logout_user(request):
+    logout(request)
+    return Response({'message': 'User logged out successfully.'}, status=status.HTTP_200_OK)
