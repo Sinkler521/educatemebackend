@@ -1,9 +1,10 @@
+from rest_framework import status
 from rest_framework.decorators import api_view
 
 from .models import Article
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import ContactUsSerializer, ArticleSerializer
+from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -47,6 +48,26 @@ def get_latest_news(request):
     serialized_news = ArticleSerializer(latest_news, many=True)
 
     return Response(serialized_news.data)
+
+
+@api_view(['GET'])
+def get_all_news(request):
+
+    news = Article.objects.all()
+    serialized_news = ArticleSerializer(news, many=True)
+
+    return Response(serialized_news)
+
+
+@api_view(['POST'])
+def search_news(request):
+    serializer = ArticleSearchSerializer(data=request.data)
+    if serializer.is_valid():
+        articles = serializer.search_articles()
+        result_serializer = ArticleSerializer(articles, many=True)
+        return Response(result_serializer.data)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
