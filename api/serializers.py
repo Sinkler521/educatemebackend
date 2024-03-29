@@ -23,7 +23,7 @@ class ArticleSearchSerializer(serializers.Serializer):
         return value
 
     def search_articles(self):
-        search_query = self.validated_data['value']
+        search_query = self.validated_data['search_query']
         title_matches = Article.objects.filter(title__iregex=r'\y{}\y'.format(re.escape(search_query)))
         description_matches = Article.objects.filter(description__iregex=r'\y{}\y'.format(re.escape(search_query)))
         articles = list(title_matches) + list(description_matches)

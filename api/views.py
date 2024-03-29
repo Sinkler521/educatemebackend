@@ -43,7 +43,7 @@ class ContactUsView(APIView):
 @api_view(['GET'])
 def get_latest_news(request):
     seven_days_ago = timezone.now() - timedelta(days=7)
-    latest_news = Article.objects.filter(publication_date__gte=seven_days_ago)
+    latest_news = Article.objects.filter(publication_date__gte=seven_days_ago).order_by('-publication_date')
 
     serialized_news = ArticleSerializer(latest_news, many=True)
 
@@ -53,7 +53,7 @@ def get_latest_news(request):
 @api_view(['GET'])
 def get_all_news(request):
 
-    news = Article.objects.all()
+    news = Article.objects.all().order_by('-publication_date')
     serialized_news = ArticleSerializer(news, many=True)
 
     return Response(serialized_news)
@@ -72,4 +72,14 @@ def search_news(request):
 
 @api_view(['POST'])
 def article_add(request):
-    ...
+
+    title = request.data.get('title')
+    description = request.data.get('description')
+    image_base64 = request.data.get('image')
+
+    if not title or not description or not image_base64:
+        return Response({'message': 'Missing required data'}, status=status.HTTP_400_BAD_REQUEST)
+
+    article = Article(title=title, description=description, image=image_base64)
+    article.save()
+    return Response({'message': 'Article added successfully'}, status=status.HTTP_200_OK)

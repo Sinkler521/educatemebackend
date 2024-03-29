@@ -4,7 +4,7 @@ from .views import *
 urlpatterns = [
     path('contactus/', ContactUsView.as_view(), name='contactus'),
     path('getlatestnews/', get_latest_news, name='latest_news'),
-    path('getallnews', get_all_news, name='get_all_news'),
+    path('getallnews/', get_all_news, name='get_all_news'),
     path('searchnews/', search_news, name='search_news'),
     path('articleadd/', article_add, name='add_article'),
 ]
