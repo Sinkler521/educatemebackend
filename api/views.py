@@ -83,3 +83,30 @@ def article_add(request):
     article = Article(title=title, description=description, image=image_base64)
     article.save()
     return Response({'message': 'Article added successfully'}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def article_get(request, article_id):
+    try:
+        article = Article.objects.get(id=article_id)
+        serializer = ArticleSerializer(article)
+        return Response(serializer.data)
+    except Article.DoesNotExist:
+        return Response({'message': 'Article not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+def article_change(request):
+    try:
+        article_id = request.data.get('id')
+        article = Article.objects.get(id=article_id)
+
+        article.title = request.data.get('title')
+        article.description = request.data.get('description')
+        article.image = request.data.get('image')
+
+        article.save()
+        return Response({'message': 'Article updated successfully'}, status=status.HTTP_200_OK)
+    except Article.DoesNotExist:
+        return Response({'message': 'Article not found'}, status=status.HTTP_404_NOT_FOUND)
+

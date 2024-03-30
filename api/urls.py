@@ -7,4 +7,6 @@ urlpatterns = [
     path('getallnews/', get_all_news, name='get_all_news'),
     path('searchnews/', search_news, name='search_news'),
     path('articleadd/', article_add, name='add_article'),
+    path('articleget/<int:article_id>/', article_get, name='article_get'),
+    path('articlechange/', article_change, name='article_change')
 ]
