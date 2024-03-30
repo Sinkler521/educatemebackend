@@ -110,3 +110,14 @@ def article_change(request):
     except Article.DoesNotExist:
         return Response({'message': 'Article not found'}, status=status.HTTP_404_NOT_FOUND)
 
+
+@api_view(['POST'])
+def article_delete(request):
+    try:
+        article_id = request.data.get('id')
+        article = Article.objects.get(id=article_id)
+
+        article.delete()
+        return Response({'message': 'Article deleted successfully'}, status=status.HTTP_200_OK)
+    except Article.DoesNotExist:
+        return Response({'message': 'Article not found'}, status=status.HTTP_404_NOT_FOUND)
