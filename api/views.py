@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
+import re
 
 
 class ContactUsView(APIView):
@@ -56,16 +57,20 @@ def get_all_news(request):
     news = Article.objects.all().order_by('-publication_date')
     serialized_news = ArticleSerializer(news, many=True)
 
-    return Response(serialized_news)
+    return Response(serialized_news.data)
 
 
 @api_view(['POST'])
 def search_news(request):
-    serializer = ArticleSearchSerializer(data=request.data)
+    search_query = request.data.get('value', '')
+
+    serializer = ArticleSearchSerializer(data={'search_query': search_query})
+
     if serializer.is_valid():
-        articles = serializer.search_articles()
+        articles = (Article.objects.filter(title__regex=r'(?i).*' + re.escape(search_query) + r'.*')
+                    .order_by('-publication_date'))
         result_serializer = ArticleSerializer(articles, many=True)
-        return Response(result_serializer.data)
+        return Response(result_serializer.data, status=status.HTTP_200_OK)
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

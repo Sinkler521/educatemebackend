@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from .models import Article
-import re
 
 
 class ContactUsSerializer(serializers.Serializer):
@@ -21,10 +20,3 @@ class ArticleSearchSerializer(serializers.Serializer):
         if not value.strip():
             raise serializers.ValidationError("Search query cannot be empty")
         return value
-
-    def search_articles(self):
-        search_query = self.validated_data['search_query']
-        title_matches = Article.objects.filter(title__iregex=r'\y{}\y'.format(re.escape(search_query)))
-        description_matches = Article.objects.filter(description__iregex=r'\y{}\y'.format(re.escape(search_query)))
-        articles = list(title_matches) + list(description_matches)
-        return articles
