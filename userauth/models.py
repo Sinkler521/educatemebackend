@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
@@ -30,6 +31,7 @@ class CustomUser(AbstractBaseUser):
     username = models.CharField(max_length=16, unique=True)
     password = models.CharField(max_length=128)
     is_staff = models.BooleanField(default=False)
+    avatar = models.TextField(default=settings.DEFAULT_AVATAR_BASE64)
     date_joined = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD = 'email'
