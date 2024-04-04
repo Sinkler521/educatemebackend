@@ -1,6 +1,7 @@
 from django.core.mail import send_mail
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from django.contrib.auth import login, logout
 from django.contrib.auth.hashers import check_password
@@ -78,3 +79,25 @@ def reset_password(request):
 def logout_user(request):
     logout(request)
     return Response({'message': 'User logged out successfully.'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def change_photo(request):
+    user_id = request.data.get('id')
+    avatar = request.data.get('avatar')
+
+    if not user_id or not avatar:
+        return Response({'error': 'ID пользователя и фото являются обязательными полями'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        user.avatar = avatar
+        user.save()
+
+        user_return = CustomUserSerializer(user)
+        return Response(user_return.data, status=status.HTTP_200_OK)
+    except CustomUser.DoesNotExist:
+        raise NotFound('Пользователь с указанным ID не найден')
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
