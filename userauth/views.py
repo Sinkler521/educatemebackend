@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from django.contrib.auth import login, logout
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.conf import settings
 
 from .models import CustomUser
@@ -99,5 +99,55 @@ def change_photo(request):
         return Response(user_return.data, status=status.HTTP_200_OK)
     except CustomUser.DoesNotExist:
         raise NotFound('Пользователь с указанным ID не найден')
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def change_password(request):
+    user_id = request.data.get('id')
+    password = request.data.get('password')
+    new_password = request.data.get('newPassword')
+
+    if not (user_id and password and new_password):
+        return Response({'error': 'ID пользователя, текущий и новый пароли являются обязательными полями'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        if not check_password(password, user.password):
+            return Response({'error': 'Неверный текущий пароль'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.password = make_password(new_password)
+        user.save()
+
+        return Response({'message': 'Пароль успешно изменен'}, status=status.HTTP_200_OK)
+    except CustomUser.DoesNotExist:
+        return Response({'error': 'Пользователь с указанным ID не найден'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def change_email(request):
+    user_id = request.data.get('id')
+    new_email = request.data.get('newEmail')
+
+    if not (user_id and new_email):
+        return Response({'error': 'ID пользователя и новый email являются обязательными полями'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        if not user:
+            return Response({'error': 'Пользователь с указанным ID не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        if CustomUser.objects.exclude(id=user_id).filter(email=new_email).exists():
+            return Response({'error': 'Пользователь с таким email уже существует'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.email = new_email
+        user.save()
+
+        return Response({'message': 'Email успешно изменен'}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
