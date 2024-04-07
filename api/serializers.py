@@ -6,7 +6,6 @@ class ContactUsSerializer(serializers.Serializer):
     email = serializers.EmailField()
     message = serializers.CharField()
 
-
 class ArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Article
@@ -20,3 +19,9 @@ class ArticleSearchSerializer(serializers.Serializer):
         if not value.strip():
             raise serializers.ValidationError("Search query cannot be empty")
         return value
+
+
+class ContactFAQSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    subject = serializers.CharField()
+    message = serializers.CharField()

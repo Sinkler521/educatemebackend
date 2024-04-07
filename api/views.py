@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from .models import Article
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSerializer
+from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSerializer, ContactFAQSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -43,8 +43,7 @@ class ContactUsView(APIView):
 
 @api_view(['GET'])
 def get_latest_news(request):
-    seven_days_ago = timezone.now() - timedelta(days=7)
-    latest_news = Article.objects.filter(publication_date__gte=seven_days_ago).order_by('-publication_date')
+    latest_news = Article.objects.order_by('-publication_date')[:5]
 
     serialized_news = ArticleSerializer(latest_news, many=True)
 
@@ -126,3 +125,33 @@ def article_delete(request):
         return Response({'message': 'Article deleted successfully'}, status=status.HTTP_200_OK)
     except Article.DoesNotExist:
         return Response({'message': 'Article not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+def contact_faq(request):
+    serializer = ContactFAQSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data.get('email')
+        subject = serializer.validated_data.get('subject')
+        message = serializer.validated_data.get('message')
+        try:
+            send_mail(
+                subject=f"EducateMe: {subject}",
+                message="We have received your message, and will contact you soon",
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[email],
+                fail_silently=False
+            )
+
+            send_mail(
+                subject=f"EducateMe: {subject}",
+                message=f'from: {email}\n\n{message}',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[settings.ADMIN_EMAIL],
+                fail_silently=False
+            )
+        except Exception as exception:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
