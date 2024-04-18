@@ -10,5 +10,6 @@ urlpatterns = [
     path('articleget/<int:article_id>/', article_get, name='article_get'),
     path('articlechange/', article_change, name='article_change'),
     path('articledelete/', article_delete, name='article_delete'),
-    path('contactfaq/', contact_faq, name='contact_faq')
+    path('contactfaq/', contact_faq, name='contact_faq'),
+    path('getcourses/', get_courses, name='get_courses')
 ]

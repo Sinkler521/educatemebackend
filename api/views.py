@@ -1,10 +1,12 @@
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import api_view
 
-from .models import Article
+from .models import Article, Course
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSerializer, ContactFAQSerializer
+from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSerializer, ContactFAQSerializer, \
+    CourseSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -155,3 +157,36 @@ def contact_faq(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_courses(request):
+    try:
+        sort_by = request.GET.get('sort_by', '')
+        complexity = request.GET.get('complexity', '')
+        topic = request.GET.get('topic', '')
+        title = request.GET.get('title', '')
+
+        courses = Course.objects.all()
+        if sort_by:
+            if sort_by == 'oldest':
+                courses = courses.order_by('date_created')
+            elif sort_by == 'newest':
+                courses = courses.order_by('-date_created')
+        if complexity:
+            courses = courses.filter(complexity=complexity)
+        if topic:
+            courses = courses.filter(topic=topic)
+        if title:
+            courses = courses.filter(Q(title__icontains=title))
+
+        topics = Course.objects.values_list('topic', flat=True).distinct()
+
+        serializer = CourseSerializer(courses, many=True)
+        data = {
+            'courses': serializer.data,
+            'topics': list(topics)
+        }
+        return Response(data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

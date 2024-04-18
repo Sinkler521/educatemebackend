@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article
+from .models import Article, CourseStage, Course
 
 
 class ContactUsSerializer(serializers.Serializer):
@@ -25,3 +25,17 @@ class ContactFAQSerializer(serializers.Serializer):
     email = serializers.EmailField()
     subject = serializers.CharField()
     message = serializers.CharField()
+
+
+class CourseStageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseStage
+        fields = ['title', 'description', 'image', 'text', 'publication_date', 'order']
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    stages = CourseStageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'description', 'image', 'topic', 'complexity', 'publication_date', 'stages']
