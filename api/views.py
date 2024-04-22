@@ -1,8 +1,10 @@
 from django.db.models import Q
+from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view
 
-from .models import Article, Course
+from userauth.models import CustomUser
+from .models import Article, Course, CourseStage, CourseProgress
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSerializer, ContactFAQSerializer, \
@@ -190,3 +192,83 @@ def get_courses(request):
         return Response(data)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_course_info(request):
+    try:
+        course_id = request.GET.get('id')
+        course = Course.objects.get(id=course_id)
+        stages = CourseStage.objects.filter(course=course).order_by('order')
+        print('course_id', course_id)
+        course_data = {
+            'id': course.id,
+            'title': course.title,
+            'description': course.description,
+            'image': course.image,
+            'topic': course.topic,
+            'complexity': course.complexity,
+            'publication_date': course.publication_date,
+
+        }
+
+        stages_data = [{'title': stage.title, 'description': stage.description} for stage in stages]
+
+        response_data = {
+            'course': course_data,
+            'stages': stages_data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def check_course_added(request):
+    course_id = request.GET.get('course_id')
+    user_id = request.GET.get('user_id')
+
+    if not course_id or not user_id:
+        return Response({"error": "Both 'course_id' and 'user_id' must be provided."}, status=400)
+
+    try:
+        course_id = int(course_id)
+        user_id = int(user_id)
+    except ValueError:
+        return Response({"error": "Invalid 'course_id' or 'user_id'. Must be integers."}, status=400)
+
+    course_added = CourseProgress.objects.filter(user_id=user_id, course_id=course_id).exists()
+
+    return Response(course_added)
+
+
+@api_view(['POST'])
+def user_add_course(request):
+    user_id = request.data.get('user_id')
+    course_id = request.data.get('course_id')
+
+    if not user_id or not course_id:
+        return JsonResponse({'message': 'Missing user_id or course_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = CustomUser.objects.get(pk=user_id)
+        course = Course.objects.get(pk=course_id)
+    except CustomUser.DoesNotExist:
+        return JsonResponse({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Course.DoesNotExist:
+        return JsonResponse({'message': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if CourseProgress.objects.filter(user=user, course=course).exists():
+        return JsonResponse({'message': 'User has already added this course'}, status=status.HTTP_409_CONFLICT)
+
+    try:
+        first_stage = CourseStage.objects.filter(course=course, order=0).first()
+        if not first_stage:
+            return JsonResponse({'message': 'No initial stage found for this course'}, status=status.HTTP_404_NOT_FOUND)
+    except CourseStage.DoesNotExist:
+        return JsonResponse({'message': 'Error finding the initial stage'}, status=status.HTTP_404_NOT_FOUND)
+    CourseProgress.objects.create(user=user, course=course, current_stage=first_stage)
+
+    return JsonResponse({'message': 'Course added successfully with initial stage set'}, status=status.HTTP_200_OK)
