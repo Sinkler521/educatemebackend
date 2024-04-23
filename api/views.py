@@ -11,8 +11,7 @@ from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSe
     CourseSerializer
 from django.core.mail import send_mail
 from django.conf import settings
-from django.utils import timezone
-from datetime import timedelta
+from django.db.models import Count
 import re
 
 
@@ -272,3 +271,35 @@ def user_add_course(request):
     CourseProgress.objects.create(user=user, course=course, current_stage=first_stage)
 
     return JsonResponse({'message': 'Course added successfully with initial stage set'}, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def admin_get_info(request):
+    user_id = request.query_params.get('user_id')
+    if not user_id:
+        return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        courses = Course.objects.filter(teacher__id=user_id)
+        if courses.exists():
+            course_serializer = CourseSerializer(courses, many=True)
+            courses_data = course_serializer.data
+
+            topics_count = courses.values('topic').annotate(count=Count('topic')).order_by('-count')
+            most_popular_topic = topics_count[0]['topic'] if topics_count else ''
+            different_topics_count = len(topics_count)
+
+            return Response({
+                'courses': courses_data,
+                'most_popular': most_popular_topic,
+                'different_topics': different_topics_count
+            })
+        else:
+            return Response({
+                'courses': [],
+                'most_popular': '',
+                'different_topics': 0
+            })
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
