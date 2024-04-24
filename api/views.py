@@ -12,6 +12,7 @@ from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSe
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 import re
 
 
@@ -303,3 +304,25 @@ def admin_get_info(request):
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def admin_delete_course(request):
+    user_id = request.query_params.get('user_id')
+    course_id = request.query_params.get('course_id')
+    course_title = request.query_params.get('coursetitle')
+
+    try:
+        user = CustomUser.objects.get(id=user_id)
+    except CustomUser.DoesNotExist:
+        return Response({'error': 'User does not exist'}, status=400)
+
+    course = get_object_or_404(Course, id=course_id)
+
+    if course.title != course_title:
+        return Response({'error': 'Incorrect course title'}, status=400)
+
+    course.delete()
+    CourseStage.objects.filter(course_id=course_id).delete()
+
+    return Response({'message': 'Course and its stages have been deleted successfully'}, status=200)

@@ -17,5 +17,6 @@ urlpatterns = [
     path('checkcourseadded/', check_course_added, name='check_course_added'),
     path('useraddcourse/', user_add_course, name='user_add_course'),
 
-    path('admingetinfo/', admin_get_info, name='admin_get_info')
+    path('admingetinfo/', admin_get_info, name='admin_get_info'),
+    path('admindeletecourse/', admin_delete_course, name='admin_delete_course')
 ]
