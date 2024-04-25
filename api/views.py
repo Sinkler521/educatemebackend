@@ -326,3 +326,43 @@ def admin_delete_course(request):
     CourseStage.objects.filter(course_id=course_id).delete()
 
     return Response({'message': 'Course and its stages have been deleted successfully'}, status=200)
+
+
+@api_view(['POST'])
+def admin_add_course(request):
+    try:
+        new_course_data = request.data['course']
+        new_course_stages_data = request.data['stages']
+        teacher_id = request.data['user_id']
+
+        teacher = get_object_or_404(CustomUser, id=teacher_id)
+
+        new_course = Course.objects.create(
+            title=new_course_data['title'],
+            description=new_course_data['description'],
+            image=new_course_data['image'],
+            topic=new_course_data['topic'],
+            complexity=new_course_data['complexity'],
+            teacher=teacher
+        )
+        for stage_data in new_course_stages_data:
+            CourseStage.objects.create(
+                course=new_course,
+                title=stage_data['title'],
+                description=stage_data['description'],
+                image=stage_data['image'],
+                video=stage_data['video'],
+                text=stage_data['text'],
+                order=stage_data['order']
+            )
+
+        return Response({'message': 'Course and its stages have been added successfully'},
+                        status=status.HTTP_201_CREATED)
+
+    except KeyError:
+        return Response({'error': 'Invalid request data format'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
