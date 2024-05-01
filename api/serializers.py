@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article, CourseStage, Course
+from .models import Article, CourseStage, Course, CourseProgress
 
 
 class ContactUsSerializer(serializers.Serializer):
@@ -39,3 +39,19 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = ['id', 'title', 'description', 'image', 'topic', 'complexity', 'publication_date', 'stages']
+
+
+class CourseProgressMenuSerializer(serializers.ModelSerializer):
+    course = CourseSerializer()
+
+    class Meta:
+        model = CourseProgress
+        fields = ['course', 'current_stage', 'completed']
+
+
+class CourseProgressSerializer(serializers.ModelSerializer):
+    current_stage = serializers.IntegerField(source='current_stage.order')
+
+    class Meta:
+        model = CourseProgress
+        fields = ['course', 'current_stage', 'completed']

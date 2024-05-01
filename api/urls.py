@@ -19,5 +19,8 @@ urlpatterns = [
 
     path('admingetinfo/', admin_get_info, name='admin_get_info'),
     path('admindeletecourse/', admin_delete_course, name='admin_delete_course'),
-    path('adminaddcourse/', admin_add_course, name='admin_add_course')
+    path('adminaddcourse/', admin_add_course, name='admin_add_course'),
+    path('getmycourses/', user_get_courses, name='user_get_courses'),
+    path('searchmycourses/', user_search_courses, name='user_search_courses'),
+    path('usercompletestage/', user_complete_stage, name='user_complete_stage')
 ]

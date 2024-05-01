@@ -8,7 +8,7 @@ from .models import Article, Course, CourseStage, CourseProgress
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSerializer, ContactFAQSerializer, \
-    CourseSerializer
+    CourseSerializer, CourseProgressSerializer, CourseStageSerializer, CourseProgressMenuSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Count
@@ -172,9 +172,9 @@ def get_courses(request):
         courses = Course.objects.all()
         if sort_by:
             if sort_by == 'oldest':
-                courses = courses.order_by('date_created')
+                courses = courses.order_by('publication_date')
             elif sort_by == 'newest':
-                courses = courses.order_by('-date_created')
+                courses = courses.order_by('-publication_date')
         if complexity:
             courses = courses.filter(complexity=complexity)
         if topic:
@@ -193,13 +193,15 @@ def get_courses(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(['GET'])
 def get_course_info(request):
     try:
         course_id = request.GET.get('id')
+        user_id = request.GET.get('user_id')
         course = Course.objects.get(id=course_id)
         stages = CourseStage.objects.filter(course=course).order_by('order')
-        print('course_id', course_id)
+
         course_data = {
             'id': course.id,
             'title': course.title,
@@ -211,12 +213,25 @@ def get_course_info(request):
 
         }
 
-        stages_data = [{'title': stage.title, 'description': stage.description} for stage in stages]
+        stages_data = [{'title': stage.title,
+                        'description': stage.description,
+                        'image': stage.image,
+                        'video': stage.video,
+                        'text': stage.text,
+                        'order': stage.order} for stage in stages]
 
         response_data = {
             'course': course_data,
             'stages': stages_data,
         }
+
+        if user_id:
+            user = CustomUser.objects.get(id=user_id)
+            user_progress = CourseProgress.objects.filter(user=user, course=course).first()
+            if user_progress:
+                progress_serializer = CourseProgressSerializer(user_progress)
+                progress_data = progress_serializer.data
+                response_data['progress'] = progress_data
 
         return Response(response_data, status=status.HTTP_200_OK)
     except Course.DoesNotExist:
@@ -365,4 +380,76 @@ def admin_add_course(request):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['GET'])
+def user_get_courses(request):
+    user_id = request.query_params.get('user_id')
 
+    user_courses_progress = CourseProgress.objects.filter(user_id=user_id)
+    serializer = CourseProgressMenuSerializer(user_courses_progress, many=True)
+
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def user_search_courses(request):
+    user_id = request.query_params.get('user_id')
+    topic = request.query_params.get('topic', '')
+    complexity = request.query_params.get('complexity', '')
+    sortby = request.query_params.get('sortby', '')
+    title = request.query_params.get('title', '')
+
+    filters = {}
+    if topic:
+        filters['course__topic'] = topic
+    if complexity:
+        filters['course__complexity__icontains'] = complexity
+
+    user_course_progresses = CourseProgress.objects.filter(user_id=user_id)
+    if filters:
+        user_course_progresses = user_course_progresses.filter(**filters)
+    if title:
+        user_course_progresses = user_course_progresses.filter(Q(course__title__icontains=title))
+
+    courses_data = []
+    for progress in user_course_progresses:
+        course_data = {
+            'course': CourseSerializer(progress.course).data,
+            'stages': CourseStageSerializer(progress.course.stages.all(), many=True).data
+        }
+        courses_data.append(course_data)
+
+    if sortby == 'newest':
+        courses_data = sorted(courses_data, key=lambda x: x['course']['publication_date'], reverse=True)
+    elif sortby == 'oldest':
+        courses_data = sorted(courses_data, key=lambda x: x['course']['publication_date'])
+
+    return Response(courses_data)
+
+
+@api_view(['POST'])
+def user_complete_stage(request):
+    try:
+        user_id = request.data['user_id']
+        course_id = request.data['course_id']
+        stage_order = request.data['new_stage_order']
+
+        user_progress = CourseProgress.objects.get(user_id=user_id, course_id=course_id)
+        stage = CourseStage.objects.get(course_id=course_id, order=stage_order)
+
+        user_progress.current_stage = stage
+        user_progress.save()
+
+        total_stages = CourseStage.objects.filter(course_id=course_id).count()
+        completed_stages = CourseStage.objects.filter(course_id=course_id, order__lte=stage.order - 1).count()
+        completed_percentage = round(completed_stages / total_stages * 100)
+
+        user_progress.completed = completed_percentage
+        user_progress.save()
+
+        return Response(status=status.HTTP_200_OK)
+    except CourseProgress.DoesNotExist:
+        return Response({'error': 'Course progress not found'}, status=status.HTTP_404_NOT_FOUND)
+    except CourseStage.DoesNotExist:
+        return Response({'error': 'Course stage not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
