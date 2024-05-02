@@ -460,3 +460,23 @@ def user_complete_stage(request):
         return Response({'error': 'Course stage not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def search_info(request):
+    search_value = request.GET.get('searchvalue')
+
+    if not search_value:
+        return JsonResponse({'error': 'Search value is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    course_results = Course.objects.filter(Q(title__icontains=search_value) | Q(description__icontains=search_value))
+    course_data = [{'title': f'Course: {course.title}', 'link': f'/app/products/courses/{course.id}'} for course in
+                   course_results]
+
+    article_results = Article.objects.filter(Q(title__icontains=search_value) | Q(description__icontains=search_value))
+    article_data = [{'title': f'Article: {article.title}', 'link': f'/app/news/{article.id}'} for article in
+                    article_results]
+
+    search_results = course_data + article_data
+
+    return JsonResponse(search_results, safe=False)
