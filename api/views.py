@@ -434,6 +434,13 @@ def user_complete_stage(request):
         stage_order = request.data['new_stage_order']
 
         user_progress = CourseProgress.objects.get(user_id=user_id, course_id=course_id)
+        total_stages = CourseStage.objects.filter(course_id=course_id).count()
+
+        if stage_order >= total_stages:
+            user_progress.completed = 100
+            user_progress.save()
+            return Response({'error': 'User has already completed all stages of the course'},
+                            status=status.HTTP_400_BAD_REQUEST)
         stage = CourseStage.objects.get(course_id=course_id, order=stage_order)
 
         user_progress.current_stage = stage

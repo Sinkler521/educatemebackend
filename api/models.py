@@ -47,7 +47,7 @@ class CourseProgress(models.Model):
     completed = models.FloatField(default=0.0)
 
     def __str__(self):
-        return f"{self.user.username} - {self.course.title} - {self.completed*100}% complete"
+        return f"{self.user.username} - {self.course.title} - {self.completed}% complete"
 
     class Meta:
         unique_together = (('user', 'course'),)
