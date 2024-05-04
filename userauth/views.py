@@ -82,7 +82,7 @@ def logout_user(request):
 
 
 @api_view(['POST'])
-def change_photo(request):
+def change_user_photo(request):
     user_id = request.data.get('id')
     avatar = request.data.get('avatar')
 

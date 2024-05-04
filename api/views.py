@@ -46,6 +46,19 @@ class ContactUsView(APIView):
 
 
 @api_view(['GET'])
+def get_statistics(request):
+    num_custom_users = CustomUser.objects.count()
+    num_completed_courses = CourseProgress.objects.filter(completed=100).count()
+    num_courses = Course.objects.count()
+
+    return Response({
+        'custom_user_data': num_custom_users,
+        'completed_courses_data': num_completed_courses,
+        'courses_data': num_courses
+    })
+
+
+@api_view(['GET'])
 def get_latest_news(request):
     latest_news = Article.objects.order_by('-publication_date')[:5]
 
@@ -176,9 +189,9 @@ def get_courses(request):
             elif sort_by == 'newest':
                 courses = courses.order_by('-publication_date')
         if complexity:
-            courses = courses.filter(complexity=complexity)
+            courses = courses.filter(complexity__icontains=complexity)
         if topic:
-            courses = courses.filter(topic=topic)
+            courses = courses.filter(topic__icontains=topic)
         if title:
             courses = courses.filter(Q(title__icontains=title))
 
