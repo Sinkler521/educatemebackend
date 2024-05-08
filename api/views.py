@@ -8,12 +8,23 @@ from .models import Article, Course, CourseStage, CourseProgress
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import ContactUsSerializer, ArticleSerializer, ArticleSearchSerializer, ContactFAQSerializer, \
-    CourseSerializer, CourseProgressSerializer, CourseStageSerializer, CourseProgressMenuSerializer
+    CourseSerializer, CourseProgressSerializer, CourseStageSerializer, CourseProgressMenuSerializer, \
+    CourseTopicSerializer
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 import re
+
+
+@api_view(['GET'])
+def get_topics(request):
+    try:
+        courses = Course.objects.all()
+        serialized = CourseTopicSerializer(courses, many=True)
+        return Response(serialized.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class ContactUsView(APIView):

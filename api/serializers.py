@@ -41,6 +41,12 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'description', 'image', 'topic', 'complexity', 'publication_date', 'stages']
 
 
+class CourseTopicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['topic']
+
+
 class CourseProgressMenuSerializer(serializers.ModelSerializer):
     course = CourseSerializer()
 
