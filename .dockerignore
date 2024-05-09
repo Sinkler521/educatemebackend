@@ -1,0 +1,6 @@
+.idea
+.env.example
+.env
+.gitignore
+venv
+db.sqlite3
