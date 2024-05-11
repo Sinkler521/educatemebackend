@@ -20,11 +20,6 @@ ENV EMAIL_HOST_PASSWORD=rXIq1dpYxIAfuXYW
 ENV EMAIL_PORT=587
 ENV ADMIN_EMAIL=Sinkler521@gmail.com
 
-# Выполняем миграции приложения Django
-RUN python manage.py makemigrations
-RUN python manage.py migrate
+RUN python manage.py collectstatic --no-input && python manage.py makemigrations && python manage.py makemigrations userauth && python manage.py migrate && python manage.py migrate userauth && echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'admin123456')" | python manage.py shell
 
-# Команда для запуска сервера Django
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-
-ENTRYPOINT ["top", "-b"]
+CMD python manage.py runserver 0.0.0.0:8000
